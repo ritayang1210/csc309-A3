@@ -13,16 +13,17 @@ fs.readFile('favs.json', 'utf8',
 var getAllTweets = new RegExp('^/getAllTweets/.*$');
 var getAllTwitterUsers = new RegExp('^/getAllTwitterUsers/.*$');
 var getAllExternalLinks = new RegExp('^/getAllExternalLinks/.*$');
-var getTweet = new RegExp('^/getTweet/id=(\\d*)/.*$');
-var getUserInfo = new RegExp('^/getUserInfo/screenName=(\\w*)/.*$');
+var getTweet = new RegExp('^/getTweet\\?id=(.*)/.*$');
+var getUserInfo = new RegExp('^/getUserInfo\\?screenName=(.*)/.*$');
+var getSearchedText = new RegExp('^/searchText\\?target=(.*)/.*$');
 
 function buildAllTweetsRes(res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
     for (var i = 0; i < json.length; i++) {
         var tweet = json[i];
+        res.write('Tweet ID: ' + JSON.stringify(tweet.id).split('\"').join('') + '\n');
         res.write('Tweet: ' + JSON.stringify(tweet.text).split('\"').join('') + '\n');
         res.write('User Name: ' + JSON.stringify(tweet.user.name).split('\"').join('') + '\n');
-        res.write('Location: ' + JSON.stringify(tweet.user.location).split('\"').join('') + '\n');
         res.write('Created At: ' + JSON.stringify(tweet.created_at).split('\"').join('') + '\n\n');
     }
     res.end();
@@ -37,9 +38,7 @@ function buildAllTwitterUserRes(res) {
             res.write('User ID: ' + JSON.stringify(user.id).split('\"').join('') + '\n');
             res.write('User Name: ' + JSON.stringify(user.name).split('\"').join('') + '\n');
             res.write('User Screen Name: ' + JSON.stringify(user.screen_name).split('\"').join('') + '\n');
-            res.write('User Location: ' + JSON.stringify(user.location).split('\"').join('') + '\n');
-            res.write('User Description: ' + JSON.stringify(user.description).split('\"').join('') + '\n');
-            res.write('User URL: ' + JSON.stringify(user.url).split('\"').join('') + '\n\n');
+            res.write('User Location: ' + JSON.stringify(user.location).split('\"').join('') + '\n\n');
             includedUsers.push(user.id);
         }
     }
@@ -62,26 +61,42 @@ function buildAllExternalLinksRes(res) {
 }
 
 function buildTweetRes(res, id) {
+    if (isBlank(id)) {
+        res.writeHead(200, {'Content-Type': 'text/plain'});
+        res.end('Please Specify the Tweet ID to Look For.');
+        return;
+    }
+
     for (var i = 0; i < json.length; i++) {
         var tweet = json[i];
         if (tweet.id == id) {
             res.writeHead(200, {'Content-Type': 'text/plain'});
+            res.write('Tweet ID: ' + JSON.stringify(tweet.id).split('\"').join('') + '\n');
             res.write('Tweet: ' + JSON.stringify(tweet.text).split('\"').join('') + '\n');
             res.write('User Name: ' + JSON.stringify(tweet.user.name).split('\"').join('') + '\n');
-            res.write('Location: ' + JSON.stringify(tweet.user.location).split('\"').join('') + '\n');
+            res.write('User Location: ' + JSON.stringify(tweet.user.location).split('\"').join('') + '\n');
+            res.write('User URL: ' + JSON.stringify(tweet.user.url).split('\"').join('') + '\n');
+            res.write('User Time Zone: ' + JSON.stringify(tweet.user.time_zone).split('\"').join('') + '\n');
             res.write('Created At: ' + JSON.stringify(tweet.created_at).split('\"').join('') + '\n\n');
-            break;
-        } else if (i == json.length - 1) {
-            buildNotFoundRed(res);
+            res.end();
+
+            return;
         }
     }
-    res.end();
+    buildNotFoundRes(res, id);
 }
 
 function buildUserInfoRes(res, screenName) {
+    if (isBlank(screenName)) {
+        res.writeHead(200, {'Content-Type': 'text/plain'});
+        res.end('Please Specify the User\'s Screen Name to Look For.');
+        return;
+    }
+
+    var includedUsers = [];
     for (var i = 0; i < json.length; i++) {
         var user = json[i].user;
-        if (user.screen_name == screenName) {
+        if (user.screen_name == screenName && includedUsers.indexOf(user.id) == -1) {
             res.writeHead(200, {'Content-Type': 'text/plain'});
             res.write('User ID: ' + JSON.stringify(user.id).split('\"').join('') + '\n');
             res.write('User Name: ' + JSON.stringify(user.name).split('\"').join('') + '\n');
@@ -89,18 +104,50 @@ function buildUserInfoRes(res, screenName) {
             res.write('User Location: ' + JSON.stringify(user.location).split('\"').join('') + '\n');
             res.write('User Description: ' + JSON.stringify(user.description).split('\"').join('') + '\n');
             res.write('User URL: ' + JSON.stringify(user.url).split('\"').join('') + '\n');
-            break;
-        } else if (i == json.length - 1) {
-            buildNotFoundRed(res);
+            includedUsers.push(user.id);
+        }
+    }
+    if (includedUsers.length == 0) {
+        buildNotFoundRes(res, screenName);
+    }
+    res.end();
+}
+
+function buildSearchTextRes(res, target) {
+    var searchTextReg = new RegExp('^.*' + target + '.*$');
+
+    res.writeHead(200, {'Content-Type': 'text/html'});
+    if (!isBlank(target)) {
+        for (var i = 0; i < json.length; i++) {
+            var tweet = json[i];
+            var text = tweet.text;
+            if (text.match(searchTextReg)) {
+                var matchedText = JSON.stringify(text).split('\"').join('');
+                matchedText = matchedText.split(target).join('<span style="background-color: yellow">' + target + '</span>');
+                res.write('Tweet ID: ' + JSON.stringify(tweet.id).split('\"').join('') + '\n');
+                res.write('Tweet: ' + matchedText + '\n');
+                res.write('User Name: ' + JSON.stringify(tweet.user.name).split('\"').join('') + '\n');
+                res.write('Created At: ' + JSON.stringify(tweet.created_at).split('\"').join('') + '\n\n');
+            }
         }
     }
     res.end();
 }
 
-function buildNotFoundRed(res) {
-    res.writeHead(404, {'Content-Type': 'text/html'});
-    res.write('<!doctype html><html><head><title>404</title></head><body>404: Resource Not Found</body></html>');
-    res.end();
+function isBlank(str) {
+    return (!str || /^\s*$/.test(str));
+}
+
+function buildNotFoundRes(res, filter) {
+    if (filter) {
+        res.writeHead(200, {'Content-Type': 'text/html'});
+        res.write('<!doctype html><html><head><title>404</title></head><body>Tweet ID or Screen Name \'' + filter + '\' Cannot be Found</body></html>');
+        res.end();
+    } else {
+        res.writeHead(404, {'Content-Type': 'text/html'});
+        res.write('<!doctype html><html><head><title>404</title></head><body>Source Not Found</body></html>');
+        res.end();
+    }
 }
 
 function handleRequest(req, res) {
@@ -120,9 +167,16 @@ function handleRequest(req, res) {
             var match = url.match(getUserInfo);
             var screenName = match[1];
             buildUserInfoRes(res, screenName);
+        } else if (url.match(getSearchedText)) {
+            var match = url.match(getSearchedText);
+            var target = match[1];
+            // Convert some of the special chars
+            target = target.split('%20').join(' ');
+            target = target.split('%27').join('\'');
+            target = target.split('%22').join('\"');
+            buildSearchTextRes(res, target);
         } else {
-            // 404 Not Found
-            buildNotFoundRed(res);
+            buildNotFoundRes(res);
         }
     } else {
         switch (url) {
@@ -141,8 +195,7 @@ function handleRequest(req, res) {
                 });
                 break;
             default:
-                // 404 Not Found
-                buildNotFoundRed(res);
+                buildNotFoundRes(res);
         }
     }
 }
