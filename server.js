@@ -1,6 +1,7 @@
 var http = require('http');
 var fs = require('fs');
 var json;
+/* Read the json file */
 fs.readFile('favs.json', 'utf8',
     function (err, data) {
         if (err) {
@@ -10,6 +11,10 @@ fs.readFile('favs.json', 'utf8',
     }
 );
 
+/* Creete the server */
+http.createServer(handleRequest).listen(3000);
+
+/* Regular expressions used to identify REST API */
 var getAllTweets = new RegExp('^/getAllTweets/.*$');
 var getAllTwitterUsers = new RegExp('^/getAllTwitterUsers/.*$');
 var getAllExternalLinks = new RegExp('^/getAllExternalLinks/.*$');
@@ -17,6 +22,7 @@ var getTweet = new RegExp('^/getTweet\\?id=(.*)/.*$');
 var getUserInfo = new RegExp('^/getUserInfo\\?screenName=(.*)/.*$');
 var getSearchedText = new RegExp('^/searchText\\?target=(.*)/.*$');
 
+/* Build response for all tweets */
 function buildAllTweetsRes(res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
     for (var i = 0; i < json.length; i++) {
@@ -29,6 +35,7 @@ function buildAllTweetsRes(res) {
     res.end();
 }
 
+/* Build response for all users */
 function buildAllTwitterUserRes(res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
     var includedUsers = [];
@@ -45,6 +52,7 @@ function buildAllTwitterUserRes(res) {
     res.end();
 }
 
+/* Build response for all external links */
 function buildAllExternalLinksRes(res) {
     res.writeHead(200, {'Content-Type': 'text/plain'});
     res.write('External Links:\n');
@@ -53,13 +61,15 @@ function buildAllExternalLinksRes(res) {
         var urls = tweet.match(new RegExp('(https?|ftp)://(www\d?|[a-zA-Z0-9]+)?\.[a-zA-Z0-9-]+(\:|\.)([a-zA-Z0-9.]+|(\d+)?)([/?:].*)?', 'gi'));
         if (urls != null) {
             for (var j = 0; j < urls.length; j++) {
-                res.write(urls[j].split('\"').join('') + '\n');
+                var link = urls[j].split('\"').join('');
+                res.write('<a href="' + link + '">' + link + '</a>\n');
             }
         }
     }
     res.end();
 }
 
+/* Build response for a single tweet */
 function buildTweetRes(res, id) {
     if (isBlank(id)) {
         res.writeHead(200, {'Content-Type': 'text/plain'});
@@ -86,6 +96,7 @@ function buildTweetRes(res, id) {
     buildNotFoundRes(res, id);
 }
 
+/* Build response for a single user */
 function buildUserInfoRes(res, screenName) {
     if (isBlank(screenName)) {
         res.writeHead(200, {'Content-Type': 'text/plain'});
@@ -113,6 +124,7 @@ function buildUserInfoRes(res, screenName) {
     res.end();
 }
 
+/* Build response for the result of search */
 function buildSearchTextRes(res, target) {
     var searchTextReg = new RegExp('^.*' + target + '.*$');
 
@@ -134,10 +146,12 @@ function buildSearchTextRes(res, target) {
     res.end();
 }
 
+/* Chech if string is empty */
 function isBlank(str) {
     return (!str || /^\s*$/.test(str));
 }
 
+/* Build reponse for result not found */
 function buildNotFoundRes(res, filter) {
     if (filter) {
         res.writeHead(200, {'Content-Type': 'text/html'});
@@ -150,9 +164,11 @@ function buildNotFoundRes(res, filter) {
     }
 }
 
+/* Main function used to handle request and build response */
 function handleRequest(req, res) {
     var url = req.url;
     if (req.headers['x-requested-with'] == 'XMLHttpRequest') {
+        /* If incoming request is AJAX call */
         if (url.match(getAllTweets)) {
             buildAllTweetsRes(res);
         } else if (url.match(getAllTwitterUsers)) {
@@ -170,7 +186,7 @@ function handleRequest(req, res) {
         } else if (url.match(getSearchedText)) {
             var match = url.match(getSearchedText);
             var target = match[1];
-            // Convert some of the special chars
+            /* Convert some of the special chars */
             target = target.split('%20').join(' ');
             target = target.split('%27').join('\'');
             target = target.split('%22').join('\"');
@@ -181,6 +197,7 @@ function handleRequest(req, res) {
     } else {
         switch (url) {
             case '/':
+                /* Request for the main page */
                 fs.readFile('index.html',function (err, data) {
                     res.writeHead(200, {'Content-Type': 'text/html','Content-Length': data.length});
                     res.write(data);
@@ -188,7 +205,24 @@ function handleRequest(req, res) {
                 });
                 break;
             case '/requests.js':
+                /* Requesr for the client-side javascript */
                 fs.readFile('requests.js',function (err, data) {
+                    res.writeHead(200, {'Content-Type': 'text/javascript','Content-Length': data.length});
+                    res.write(data);
+                    res.end();
+                });
+                break;
+            case '/index.css':
+                /* Request for the client-side css */
+                fs.readFile('index.css',function (err, data) {
+                    res.writeHead(200, {'Content-Type': 'text/css','Content-Length': data.length});
+                    res.write(data);
+                    res.end();
+                });
+                break;
+            case '/jquery-1.6.2.min.js':
+                /* Request for the jquery library */
+                fs.readFile('jquery-1.6.2.min.js',function (err, data) {
                     res.writeHead(200, {'Content-Type': 'text/javascript','Content-Length': data.length});
                     res.write(data);
                     res.end();
@@ -199,5 +233,3 @@ function handleRequest(req, res) {
         }
     }
 }
-
-http.createServer(handleRequest).listen(3000);

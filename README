@@ -1,0 +1,13 @@
+Author: Ran Yang
+
+List of HTTP Requests:
+/getAllTweets/ - Return all tweets.
+/getAllTwitterUsers/ - Return all users.
+/getAllExternalLinks/ - Return all external links.
+/getTweet?id=123/ - Return tweet by ID.
+/getUserInfo?screenName=ranyang/ - Return user information by screen name.
+/searchText?target=something/ - Return all tweets that contain the search text.
+/ - Return the main page index.html.
+/requests.js - Return the client-side javascript.
+/index.css - Return the client-side css stylesheet.
+/jquery-1.6.2.min.js - Return the jquery library used on client side.

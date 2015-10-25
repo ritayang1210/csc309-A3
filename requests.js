@@ -1,7 +1,9 @@
+/* Update the result panel */
 function updateResultPanel(data) {
     $("#resultPanel").html(data);
 }
 
+/* Send request for all tweets */
 $(document).ready(function() {
     $("#allTweets").change(function() {
         if ($(this).is(':checked')) {
@@ -16,6 +18,7 @@ $(document).ready(function() {
     });
 });
 
+/* Send request for all users */
 $(document).ready(function() {
     $("#allTwitterUsers").change(function() {
         if ($(this).is(':checked')) {
@@ -30,6 +33,7 @@ $(document).ready(function() {
     });
 });
 
+/* Send request for all external links */
 $(document).ready(function() {
     $("#allExternalLinks").change(function() {
         if ($(this).is(':checked')) {
@@ -44,7 +48,7 @@ $(document).ready(function() {
     });
 });
 
-// Get tweet by ID
+/* Send request for tweet by ID */
 $(document).ready(function() {
     $("#tweet").click(function() {
         var tweetId = $("#tweetId").val();
@@ -58,6 +62,7 @@ $(document).ready(function() {
     });
 });
 
+/* Send request for tweet by ID */
 $(document).ready(function() {
     $('#tweetId').keyup(function() {
          if ($("#tweet").is(':checked')) {
@@ -73,7 +78,7 @@ $(document).ready(function() {
     });
 });
 
-// Get user information by screen name
+/* Send request for user information by screen name */
 $(document).ready(function() {
     $("#userInfo").click(function() {
         var userScreenName = $("#userScreenName").val();
@@ -87,6 +92,7 @@ $(document).ready(function() {
     });
 });
 
+/* Send request for user information by screen name */
 $(document).ready(function() {
     $('#userScreenName').keyup(function() {
          if ($("#userInfo").is(':checked')) {
@@ -102,7 +108,7 @@ $(document).ready(function() {
     });
 });
 
-// Search text in tweets
+/* Send request for searching text in tweets */
 $(document).ready(function() {
     $("#searchText").click(function() {
         var targetText = $("#targetText").val();
@@ -116,6 +122,7 @@ $(document).ready(function() {
     });
 });
 
+/* Send request for searching text in tweets */
 $(document).ready(function() {
     $('#targetText').keyup(function() {
          if ($("#searchText").is(':checked')) {
